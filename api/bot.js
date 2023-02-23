@@ -64,14 +64,19 @@ bot.on("msg", async (ctx) => {
           parse_mode: "Markdown",
         });
         break;
-      } else if (extension === ".mp4") {
-        await ctx.replyWithVideo(data.ImageURL, {
-          reply_to_message_id: ctx.msg.message_id,
-          caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
-          parse_mode: "Markdown",
-        });
+      } else if (
+        data.ImageURL.match("v.redd.it") ||
+        extension === ".html" ||
+        ".cms"
+      ) {
+        await ctx.reply(
+          `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
+          {
+            reply_to_message_id: ctx.msg.message_id,
+            parse_mode: "Markdown",
+          }
+        );
         break;
-        //clearInterval(intervalId);
       } else {
       }
     }
