@@ -36,11 +36,8 @@ bot.on("msg", async (ctx) => {
     parse_mode: "Markdown",
   });
   try {
-    //const intervalId = setInterval(async () => {
     let extension = 0;
     for (let i = 0; extension !== ".mp4"; i++) {
-      // await RandomReddit.GetRandompost(ctx.msg.text)
-      // .then(async (data) => {
       const data = await RandomReddit.GetRandompost(ctx.msg.text);
       const extension = path.extname(data.ImageURL);
       const markdownChars = /[_*[\]()~`>#+-=|{}.!]/g;
@@ -55,20 +52,22 @@ bot.on("msg", async (ctx) => {
           parse_mode: "Markdown",
         });
         break;
-        //clearInterval(intervalId);
+      } else if (
+        data.ImageURL.match("v.redd.it") ||
+        extension === ".html" ||
+        ".cms"
+      ) {
+        await ctx.reply(
+          `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
+          {
+            reply_to_message_id: ctx.msg.message_id,
+            parse_mode: "Markdown",
+          }
+        );
+        break;
       } else {
       }
     }
-    //.catch((error) => {
-    //console.error(error);
-    //ctx.reply(
-    //"*An error occured. Are you sure you sent a valid subreddit name?*",
-    //{ parse_mode: "Markdown", reply_to_message_id: ctx.msg.message_id }
-    //);
-    //  clearInterval(intervalId);
-    //});
-
-    //}, 2000);
   } catch (error) {
     console.error(error);
     await ctx.reply(
