@@ -38,8 +38,8 @@ bot.on("msg", async (ctx) => {
   try {
     //const intervalId = setInterval(async () => {
     let extension = 0;
-    for (let i = 0; i < 5 && extension !== ".jpg"; i++) {
-      if (i == 4) {
+    for (let i = 0; i < 10 && extension !== ".jpg"; i++) {
+      if (i == 9) {
         await ctx.reply(
           "*Failed to get posts. Are you sure you sent a valid subreddit name?*",
           { parse_mode: "Markdown" }
