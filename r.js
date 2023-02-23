@@ -11,17 +11,17 @@ const bot = new Bot(process.env.BOT_TOKEN);
 
 bot.command("start", async (ctx) => {
   await ctx
-    .reply("*Welcome!* ✨ Send the name of a subreddit to get a random post.", {
+    .reply("*Welcome!* ✨ Send the name of a subreddit.", {
       parse_mode: "Markdown",
     })
-    .then(console.log("Help command sent to", ctx.from.id))
+    .then(console.log("New user added:", ctx.from))
     .catch((e) => console.error(e));
 });
 
 bot.command("help", async (ctx) => {
   await ctx
     .reply(
-      "*@anzubo Project.*\n\n_This is a Reddit media downloader bot to download media from posts._",
+      "*@anzubo Project.*\n\n_This bot downloads random posts from Reddit.\nSend a subreddit name to try it out!_",
       { parse_mode: "Markdown" }
     )
     .then(console.log("Help command sent to", ctx.from.id))
@@ -31,31 +31,43 @@ bot.command("help", async (ctx) => {
 // Messages
 
 bot.on("msg", async (ctx) => {
+  console.log("Query received:", ctx.msg.text, "from", ctx.from.id);
+  const status = await ctx.reply(`*Getting posts from r/${ctx.msg.text}*`, {
+    parse_mode: "Markdown",
+  });
   try {
-    console.log("Query received:", ctx.msg.text, "from", ctx.from.id);
-    const status = await ctx.reply(`*Getting posts from r/${ctx.msg.text}*`, {
-      parse_mode: "Markdown",
-    });
-    const intervalId = setInterval(async () => {
+    //const intervalId = setInterval(async () => {
+    let extension = 0;
+    for (let i = 0; extension !== ".jpg"; i++) {
+      // await RandomReddit.GetRandompost(ctx.msg.text)
+      // .then(async (data) => {
       const data = await RandomReddit.GetRandompost(ctx.msg.text);
       const extension = path.extname(data.ImageURL);
       const markdownChars = /[_*[\]()~`>#+-=|{}.!]/g;
       const title = data.title.replace(markdownChars, "\\$&");
       const author = data.Author.replace(markdownChars, "\\$&");
+
       if (extension === ".jpg") {
         await ctx.replyWithPhoto(data.ImageURL, {
           reply_to_message_id: ctx.msg.message_id,
           caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
           parse_mode: "Markdown",
         });
-        clearInterval(intervalId);
-        return;
+        break;
+        //clearInterval(intervalId);
       } else {
       }
-    }, 1000);
-    setTimeout(() => {
-      bot.api.deleteMessage(ctx.from.id, status.message_id);
-    }, 3000);
+    }
+    //.catch((error) => {
+    //console.error(error);
+    //ctx.reply(
+    //"*An error occured. Are you sure you sent a valid subreddit name?*",
+    //{ parse_mode: "Markdown", reply_to_message_id: ctx.msg.message_id }
+    //);
+    //  clearInterval(intervalId);
+    //});
+
+    //}, 2000);
   } catch (error) {
     console.error(error);
     await ctx.reply(
@@ -63,6 +75,9 @@ bot.on("msg", async (ctx) => {
       { parse_mode: "Markdown" }
     );
   }
+  setTimeout(() => {
+    bot.api.deleteMessage(ctx.from.id, status.message_id);
+  }, 3000);
 
   /* try {
     const data = await RandomReddit.GetRandompost(ctx.msg.text);
