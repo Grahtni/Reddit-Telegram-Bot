@@ -38,7 +38,7 @@ bot.on("msg", async (ctx) => {
   try {
     //const intervalId = setInterval(async () => {
     let extension = 0;
-    for (let i = 0; extension !== ".jpg"; i < 5) {
+    for (let i = 0; i < 5 && extension !== ".jpg"; i++) {
       // await RandomReddit.GetRandompost(ctx.msg.text)
       // .then(async (data) => {
       const data = await RandomReddit.GetRandompost(ctx.msg.text);
