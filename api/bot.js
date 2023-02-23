@@ -39,6 +39,12 @@ bot.on("msg", async (ctx) => {
     //const intervalId = setInterval(async () => {
     let extension = 0;
     for (let i = 0; i < 5 && extension !== ".jpg"; i++) {
+      if (i == 4) {
+        await ctx.reply(
+          "*Failed to get posts. Are you sure you sent a valid subreddit name?*",
+          { parse_mode: "Markdown" }
+        );
+      }
       // await RandomReddit.GetRandompost(ctx.msg.text)
       // .then(async (data) => {
       const data = await RandomReddit.GetRandompost(ctx.msg.text);
@@ -47,8 +53,19 @@ bot.on("msg", async (ctx) => {
       const title = data.title.replace(markdownChars, "\\$&");
       const author = data.Author.replace(markdownChars, "\\$&");
 
+      setTimeout(async () => {
+        bot.api.deleteMessage(ctx.from.id, status.message_id);
+      }, 3000);
+
       if (extension === ".jpg") {
         await ctx.replyWithPhoto(data.ImageURL, {
+          reply_to_message_id: ctx.msg.message_id,
+          caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
+          parse_mode: "Markdown",
+        });
+        break;
+      } else if (extension === ".mp4") {
+        await ctx.replyWithVideo(data.ImageURL, {
           reply_to_message_id: ctx.msg.message_id,
           caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
           parse_mode: "Markdown",
@@ -75,10 +92,6 @@ bot.on("msg", async (ctx) => {
       { parse_mode: "Markdown" }
     );
   }
-  setTimeout(() => {
-    bot.api.deleteMessage(ctx.from.id, status.message_id);
-  }, 3000);
-
   /* try {
     const data = await RandomReddit.GetRandompost(ctx.msg.text);
     console.log(data.title); //returns title of a post. For example: "This is just an example!"
