@@ -1,6 +1,7 @@
 require("dotenv").config();
 const { Bot, HttpError, GrammyError } = require("grammy");
 const RandomReddit = require("reddit-posts");
+const { gfycat } = require("gfycat-api");
 const path = require("path");
 
 // Bot
@@ -26,6 +27,13 @@ bot.command("help", async (ctx) => {
     )
     .then(console.log("Help command sent to", ctx.from.id))
     .catch((e) => console.error(e));
+  const gfycatUrl = "https://gfycat.com/zanychillyiceblueredtopzebra";
+  const id = gfycatUrl.split("/").pop();
+  console.log(id);
+  const post = await gfycat.getPost(id);
+  const link = post.sources.find((obj) => obj.type === "mp4").url;
+  console.log(link);
+  ctx.replyWithVideo(link);
 });
 
 // Messages
@@ -45,8 +53,27 @@ bot.on("msg", async (ctx) => {
       const author = data.Author.replace(markdownChars, "\\$&");
       console.log(data.ImageURL);
 
-      if (extension === ".jpg") {
+      /* if (extension === ".jpg") {
         await ctx.replyWithPhoto(data.ImageURL, {
+          reply_to_message_id: ctx.msg.message_id,
+          caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
+          parse_mode: "Markdown",
+        });
+      } */
+      if (data.ImageURL.match("gfycat")) {
+        const id = data.ImageURL.split("/").pop();
+        console.log(id);
+        const post = await gfycat.getPost(id);
+        const link = post.sources.find((obj) => obj.type === "mp4").url;
+        console.log(link);
+        await ctx.replyWithVideo(link, {
+          reply_to_message_id: ctx.msg.message_id,
+          caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
+          parse_mode: "Markdown",
+        });
+        break;
+      } else if (extension === ".gif" || extension === ".mp4") {
+        await ctx.replyWithVideo(data.ImageURL, {
           reply_to_message_id: ctx.msg.message_id,
           caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
           parse_mode: "Markdown",
@@ -54,8 +81,10 @@ bot.on("msg", async (ctx) => {
         break;
       } else if (
         data.ImageURL.match("v.redd.it") ||
+        data.ImageURL.match("redgifs") ||
+        data.ImageURL.match("gallery") ||
         extension === ".html" ||
-        ".cms"
+        extension === ".cms"
       ) {
         await ctx.reply(
           `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
