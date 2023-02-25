@@ -78,24 +78,35 @@ bot.command("help", async (ctx) => {
 
 bot.on("msg", async (ctx) => {
   console.log("Query received:", ctx.msg.text, "from", ctx.from.id);
-  const status = await ctx.reply(`*Getting posts from r/${ctx.msg.text}*`, {
-    parse_mode: "Markdown",
-  });
-  try {
-    for (let i = 0; i < 7; i++) {
-      if (i == 6) {
-        await ctx.reply(
-          "*Failed to get posts. Are you sure you sent a valid subreddit name?*",
-          { parse_mode: "Markdown" }
-        );
-      }
-      const data = await RandomReddit.GetRandompost(ctx.msg.text);
-      const extension = path.extname(data.ImageURL);
-      const markdownChars = /[_*[\]()~`>#+-=|{}.!]/g;
-      const title = data.title.replace(markdownChars, "\\$&");
-      const author = data.Author.replace(markdownChars, "\\$&");
+  if (!/^[a-zA-Z0-9_-]+$/.test(ctx.msg.text)) {
+    await ctx.reply("*Send a valid subreddit name like cats or aww.*", {
+      parse_mode: "Markdown",
+      reply_to_message_id: ctx.msg.message_id,
+    });
+  } else {
+    await ctx
+      .reply(`*Getting posts from r/${ctx.msg.text}*`, {
+        parse_mode: "Markdown",
+      })
+      .catch((e) => console.error(e));
 
-      /* if (extension === ".jpg") {
+    try {
+      for (let i = 0; i < 5; i++) {
+        if (i == 4) {
+          await ctx
+            .reply(
+              "*Failed to get posts. Are you sure you sent a valid subreddit name?*",
+              { parse_mode: "Markdown" }
+            )
+            .catch((e) => console.error(e));
+        }
+        const data = await RandomReddit.GetRandompost(ctx.msg.text);
+        const extension = path.extname(data.ImageURL);
+        const markdownChars = /[_*[\]()~`>#+-=|{}.!]/g;
+        const title = data.title.replace(markdownChars, "\\$&");
+        const author = data.Author.replace(markdownChars, "\\$&");
+
+        /* if (extension === ".jpg") {
         await ctx.replyWithPhoto(data.ImageURL, {
           reply_to_message_id: ctx.msg.message_id,
           caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
@@ -103,52 +114,53 @@ bot.on("msg", async (ctx) => {
         });
       } */
 
-      if (data.ImageURL.match("gfycat")) {
-        const id = data.ImageURL.split("/").pop();
-        console.log(id);
-        const post = await gfycat.getPost(id);
-        const link = post.sources.find((obj) => obj.type === "mp4").url;
-        console.log(link);
-        await ctx.replyWithVideo(link, {
-          reply_to_message_id: ctx.msg.message_id,
-          caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
-          parse_mode: "Markdown",
-        });
-        break;
-      } else if (extension === ".gif" || extension === ".mp4") {
-        await ctx.replyWithVideo(data.ImageURL, {
-          reply_to_message_id: ctx.msg.message_id,
-          caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
-          parse_mode: "Markdown",
-        });
-        break;
-      } else if (
-        //data.ImageURL.match("v.redd.it") ||
-        //data.ImageURL.match("redgifs") ||
-        //data.ImageURL.match("gallery") ||
-        extension === ".html" ||
-        extension === ".cms"
-      ) {
-        await ctx.reply(
-          `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
-          {
+        if (data.ImageURL.match("gfycat")) {
+          const id = data.ImageURL.split("/").pop();
+          console.log(id);
+          const post = await gfycat.getPost(id);
+          const link = post.sources.find((obj) => obj.type === "mp4").url;
+          console.log(link);
+          await ctx.replyWithVideo(link, {
             reply_to_message_id: ctx.msg.message_id,
+            caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
             parse_mode: "Markdown",
-          }
-        );
-        break;
-      } else {
+          });
+          break;
+        } else if (extension === ".gif" || extension === ".mp4") {
+          await ctx.replyWithVideo(data.ImageURL, {
+            reply_to_message_id: ctx.msg.message_id,
+            caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
+            parse_mode: "Markdown",
+          });
+          break;
+        } else if (
+          //data.ImageURL.match("v.redd.it") ||
+          //data.ImageURL.match("redgifs") ||
+          //data.ImageURL.match("gallery") ||
+          extension === ".html" ||
+          extension === ".cms"
+        ) {
+          await ctx.reply(
+            `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
+            {
+              reply_to_message_id: ctx.msg.message_id,
+              parse_mode: "Markdown",
+            }
+          );
+          break;
+        } else {
+        }
       }
-    }
-  } catch (error) {
-    if (error.description === "Forbidden: bot was blocked by the user") {
-      console.log(`User ${ctx.from.id} has blocked the bot`);
-    } else {
-      console.error(error);
-      await ctx.reply(
-        "*An error occured. Are you sure you sent a valid subreddit name?*",
-        { parse_mode: "Markdown" }
-      );
+    } catch (error) {
+      if (error instanceof GrammyError) {
+        console.log(`Error sending message: ${error.message}`);
+      } else {
+        console.log("An error occurred");
+        await ctx.reply(
+          `*An error occurred. Are you sure you sent a valid subreddit name?`,
+          { parse_mode: "Markdown", reply_to_message_id: ctx.msg.message_id }
+        );
+      }
     }
   }
 });
