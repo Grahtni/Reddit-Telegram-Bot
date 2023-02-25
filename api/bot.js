@@ -7,6 +7,22 @@ const path = require("path");
 
 const bot = new Bot(process.env.BOT_TOKEN);
 
+// DB
+
+const mysql = require("mysql2");
+const connection = mysql.createConnection(process.env.DATABASE_URL);
+
+// Response
+
+async function responseTime(ctx, next) {
+  const before = Date.now();
+  await next();
+  const after = Date.now();
+  console.log(`Response time: ${after - before} ms`);
+}
+
+bot.use(responseTime);
+
 // Commands
 
 bot.command("start", async (ctx) => {
@@ -14,8 +30,38 @@ bot.command("start", async (ctx) => {
     .reply("*Welcome!* ✨ Send the name of a subreddit.", {
       parse_mode: "Markdown",
     })
-    .then(console.log("New user added:", ctx.from))
-    .catch((e) => console.error(e));
+    .then(() => {
+      connection.query(
+        `
+SELECT * FROM users WHERE userid = ?
+`,
+        [ctx.from.id],
+        (error, results) => {
+          if (error) throw error;
+          if (results.length === 0) {
+            connection.query(
+              `
+    INSERT INTO users (userid, username, firstName, lastName, firstSeen)
+    VALUES (?, ?, ?, ?, NOW())
+  `,
+              [
+                ctx.from.id,
+                ctx.from.username,
+                ctx.from.first_name,
+                ctx.from.last_name,
+              ],
+              (error, results) => {
+                if (error) throw error;
+                console.log("New user added:", ctx.from);
+              }
+            );
+          } else {
+            console.log("User exists in database.", ctx.from);
+          }
+        }
+      );
+    })
+    .catch((error) => console.error(error));
 });
 
 bot.command("help", async (ctx) => {
@@ -36,17 +82,13 @@ bot.on("msg", async (ctx) => {
     parse_mode: "Markdown",
   });
   try {
-    //const intervalId = setInterval(async () => {
-    let extension = 0;
-    for (let i = 0; i < 10 && extension !== ".jpg"; i++) {
-      if (i == 9) {
+    for (let i = 0; i < 25; i++) {
+      if (i == 24) {
         await ctx.reply(
           "*Failed to get posts. Are you sure you sent a valid subreddit name?*",
           { parse_mode: "Markdown" }
         );
       }
-      // await RandomReddit.GetRandompost(ctx.msg.text)
-      // .then(async (data) => {
       const data = await RandomReddit.GetRandompost(ctx.msg.text);
       const extension = path.extname(data.ImageURL);
       const markdownChars = /[_*[\]()~`>#+-=|{}.!]/g;
@@ -57,17 +99,39 @@ bot.on("msg", async (ctx) => {
         bot.api.deleteMessage(ctx.from.id, status.message_id);
       }, 3000);
 
-      if (extension === ".jpg") {
+      /* if (extension === ".jpg") {
         await ctx.replyWithPhoto(data.ImageURL, {
+          reply_to_message_id: ctx.msg.message_id,
+          caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
+          parse_mode: "Markdown",
+        });
+      } */
+
+      if (data.ImageURL.match("gfycat")) {
+        const id = data.ImageURL.split("/").pop();
+        console.log(id);
+        const post = await gfycat.getPost(id);
+        const link = post.sources.find((obj) => obj.type === "mp4").url;
+        console.log(link);
+        await ctx.replyWithVideo(link, {
+          reply_to_message_id: ctx.msg.message_id,
+          caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
+          parse_mode: "Markdown",
+        });
+        break;
+      } else if (extension === ".gif" || extension === ".mp4") {
+        await ctx.replyWithVideo(data.ImageURL, {
           reply_to_message_id: ctx.msg.message_id,
           caption: `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
           parse_mode: "Markdown",
         });
         break;
       } else if (
-        data.ImageURL.match("v.redd.it") ||
+        //data.ImageURL.match("v.redd.it") ||
+        data.ImageURL.match("redgifs") ||
+        data.ImageURL.match("gallery") ||
         extension === ".html" ||
-        ".cms"
+        extension === ".cms"
       ) {
         await ctx.reply(
           `[${title}](${data.url})\n${data.UpVotes} upvotes\nBy ${author}`,
@@ -80,16 +144,6 @@ bot.on("msg", async (ctx) => {
       } else {
       }
     }
-    //.catch((error) => {
-    //console.error(error);
-    //ctx.reply(
-    //"*An error occured. Are you sure you sent a valid subreddit name?*",
-    //{ parse_mode: "Markdown", reply_to_message_id: ctx.msg.message_id }
-    //);
-    //  clearInterval(intervalId);
-    //});
-
-    //}, 2000);
   } catch (error) {
     console.error(error);
     await ctx.reply(
@@ -97,43 +151,6 @@ bot.on("msg", async (ctx) => {
       { parse_mode: "Markdown" }
     );
   }
-  /* try {
-    const data = await RandomReddit.GetRandompost(ctx.msg.text);
-    console.log(data.title); //returns title of a post. For example: "This is just an example!"
-    console.log(data.SubredditPrefix); //return: r/aww
-    console.log(data.IsNSFW); //return: false. If it is a NSFW post it will return true.
-    console.log(data.UpVotes); //return: 919. Any number of post upvotes.
-    console.log(data.ImageURL); //returns Image URL. For example: https://i.imgur.com/Example.jpg
-    console.log(data.selftext); //returns selftext or description of a post. (String)
-    console.log(data.url); //returns URL of post. For example: https://reddit.com/r/aww/comments/random/example/
-    console.log(data.CommentsNum); // return: 4 or any number. It is for total comments number.
-    console.log(data.Author); // Get an author username which returns a string.
-    console.log(data.DownVotes); // DownVotes is just like data.UpVotes example and it returns number.
-    const extension = path.extname(data.ImageURL);
-    if (extension === ".jpg") {
-      await ctx.replyWithPhoto(data.ImageURL, {
-        reply_to_message_id: ctx.msg.message_id,
-        caption: `[${data.title}](${data.url})\n${data.UpVotes} _upvotes\nBy ${data.Author}_`,
-        parse_mode: "Markdown",
-      });
-    } else if (extension === ".mp4") {
-      caption = data.UpVotes;
-      await ctx.replyWithVideo(data.ImageURL, {
-        reply_to_message_id: ctx.msg.message_id,
-        caption: caption,
-      });
-    } else {
-      await ctx.reply("*No valid Reddit link detected or post not found.*", {
-        parse_mode: "Markdown",
-        reply_to_message_id: ctx.msg.message_id,
-        caption: data.title,
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    await ctx.reply("An error occured");
-  }
-  */
 });
 
 // Error
