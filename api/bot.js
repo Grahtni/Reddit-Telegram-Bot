@@ -95,10 +95,6 @@ bot.on("msg", async (ctx) => {
       const title = data.title.replace(markdownChars, "\\$&");
       const author = data.Author.replace(markdownChars, "\\$&");
 
-      setTimeout(async () => {
-        bot.api.deleteMessage(ctx.from.id, status.message_id);
-      }, 3000);
-
       /* if (extension === ".jpg") {
         await ctx.replyWithPhoto(data.ImageURL, {
           reply_to_message_id: ctx.msg.message_id,
