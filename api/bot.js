@@ -82,8 +82,8 @@ bot.on("msg", async (ctx) => {
     parse_mode: "Markdown",
   });
   try {
-    for (let i = 0; i < 25; i++) {
-      if (i == 24) {
+    for (let i = 0; i < 7; i++) {
+      if (i == 6) {
         await ctx.reply(
           "*Failed to get posts. Are you sure you sent a valid subreddit name?*",
           { parse_mode: "Markdown" }
@@ -141,11 +141,15 @@ bot.on("msg", async (ctx) => {
       }
     }
   } catch (error) {
-    console.error(error);
-    await ctx.reply(
-      "*An error occured. Are you sure you sent a valid subreddit name?*",
-      { parse_mode: "Markdown" }
-    );
+    if (error.description === "Forbidden: bot was blocked by the user") {
+      console.log(`User ${ctx.from.id} has blocked the bot`);
+    } else {
+      console.error(error);
+      await ctx.reply(
+        "*An error occured. Are you sure you sent a valid subreddit name?*",
+        { parse_mode: "Markdown" }
+      );
+    }
   }
 });
 
@@ -159,10 +163,14 @@ bot.catch((err) => {
     "\nQuery:",
     ctx.msg.text
   );
-  ctx.reply("An error occurred");
   const e = err.error;
   if (e instanceof GrammyError) {
     console.error("Error in request:", e.description);
+    if (e.description === "Forbidden: bot was blocked by the user") {
+      console.log("Bot was blocked by the user");
+    } else {
+      ctx.reply("An error occurred");
+    }
   } else if (e instanceof HttpError) {
     console.error("Could not contact Telegram:", e);
   } else {
