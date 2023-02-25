@@ -128,8 +128,8 @@ bot.on("msg", async (ctx) => {
         break;
       } else if (
         //data.ImageURL.match("v.redd.it") ||
-        data.ImageURL.match("redgifs") ||
-        data.ImageURL.match("gallery") ||
+        //data.ImageURL.match("redgifs") ||
+        //data.ImageURL.match("gallery") ||
         extension === ".html" ||
         extension === ".cms"
       ) {
